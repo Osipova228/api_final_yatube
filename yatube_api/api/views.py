@@ -11,7 +11,8 @@ from rest_framework.response import Response
 
 from posts.models import Post, Follow, User, Comment, Group
 from .permissions import AllowAnyPermission, IsGetRequest, IsAuthorOrReadOnly
-from .serializers import FollowSerializer, PostSerializer, CommentSerializer, GroupSerializer
+from .serializers import (FollowSerializer, PostSerializer,
+                          CommentSerializer, GroupSerializer)
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -29,7 +30,10 @@ class PostViewSet(viewsets.ModelViewSet):
             else:
                 serializer.save(author=None)
         except IntegrityError:
-            return Response({"error": "Author is required for creating a post"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Author is required for creating a post"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -54,7 +58,10 @@ class FollowViewSet(viewsets.ModelViewSet):
         except ObjectDoesNotExist:
             raise ValidationError('Пользователь не найден!')
 
-        existing_follow = Follow.objects.filter(user=self.request.user, following=following_user).first()
+        existing_follow = Follow.objects.filter(
+            user=self.request.user,
+            following=following_user
+        ).first()
         if existing_follow:
             raise ValidationError('Вы уже подписаны на этого пользователя.')
 
