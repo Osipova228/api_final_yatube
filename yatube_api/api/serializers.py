@@ -1,13 +1,14 @@
 from rest_framework import serializers
 
-from posts.models import Comment, Post, Follow, Group
+from posts.models import Comment, Post, Follow, Group, User
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ('id', 'title', 'slug', 'description')
+        fields = '__all__'
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -18,9 +19,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = (
-            'id', 'text', 'author', 'image', 'group', 'pub_date'
-        )
+        fields = '__all__'
         read_only_fields = ('comments',)
 
 
@@ -31,20 +30,32 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'post', 'text', 'author', 'created')
-        read_only_fields = ('post', 'author')
+        fields = '__all__'
+        read_only_fields = ('post',)
 
 
 class FollowSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='username'
-    )
+        slug_field='username',
+        queryset=User.objects.all(),
+        default=serializers.CurrentUserDefault())
     following = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='username'
-    )
+        slug_field='username',
+        queryset=User.objects.all())
 
     class Meta:
-        fields = '__all__'
         model = Follow
+        fields = '__all__'
+        validators = (
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=('user', 'following'),
+                message=('Вы уже подписаны на этого автора.')
+            ),
+        )
+
+    def validate(self, data):
+        if data['user'] == data['following']:
+            raise serializers.ValidationError(
+                'Нельзя подписаться на самого себя.')
+        return data
